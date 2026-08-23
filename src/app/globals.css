@@ -1,0 +1,93 @@
+@import 'tailwindcss';
+
+:root {
+  --ink: #050505;
+  --ember: #ff7a00;
+  --amber: #ffaa00;
+  --paper: #f4e6c8;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #050505;
+  color: var(--paper);
+  font-family: Karla, system-ui, sans-serif;
+}
+
+.display {
+  font-family: 'Barlow Condensed', Karla, sans-serif;
+}
+
+.sky {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse at 12% -10%, rgba(255, 122, 0, 0.2), transparent 44%),
+    radial-gradient(ellipse at 92% 12%, rgba(255, 170, 0, 0.1), transparent 40%),
+    linear-gradient(180deg, #050505 0%, #120800 100%);
+}
+
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.ember {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(48px);
+  opacity: 0.38;
+  animation: drift 18s cubic-bezier(0.32, 0.72, 0, 1) infinite;
+}
+
+.e1 {
+  width: 300px;
+  height: 300px;
+  background: #ff7a00;
+  top: 8%;
+  left: -48px;
+}
+
+.e2 {
+  width: 220px;
+  height: 220px;
+  background: #ffaa00;
+  top: 58%;
+  right: -28px;
+  animation-delay: -7s;
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(16px, -22px, 0);
+  }
+}
+
+.panel {
+  border: 1px solid rgba(244, 230, 200, 0.12);
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 1.25rem;
+}
+
+.bar {
+  width: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff7a00, #ffaa00);
+  transform-origin: left;
+}

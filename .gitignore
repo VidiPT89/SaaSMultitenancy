@@ -1,0 +1,17 @@
+AGENTS.md
+CLAUDE.md
+/node_modules
+/.pnp
+.pnp.*
+/coverage
+/.next/
+/out/
+/build
+.DS_Store
+*.pem
+npm-debug.log*
+.env
+.env.local
+.vercel
+*.tsbuildinfo
+next-env.d.ts

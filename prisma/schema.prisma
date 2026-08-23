@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String       @id @default(cuid())
+  clerkId   String?      @unique
+  email     String       @unique
+  name      String
+  createdAt DateTime     @default(now())
+  members   Membership[]
+  invites   Invitation[] @relation("InvitedBy")
+}
+
+model Workspace {
+  id                   String         @id @default(cuid())
+  slug                 String         @unique
+  name                 String
+  nameEn               String
+  plan                 String         @default("free")
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  createdAt            DateTime       @default(now())
+  members              Membership[]
+  invites              Invitation[]
+  usage                UsagePoint[]
+  billing              BillingEvent[]
+}
+
+model Membership {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        String
+  createdAt   DateTime  @default(now())
+
+  @@unique([workspaceId, userId])
+}
+
+model Invitation {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  email       String
+  role        String
+  token       String    @unique
+  invitedById String
+  invitedBy   User      @relation("InvitedBy", fields: [invitedById], references: [id])
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model UsagePoint {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  metric      String
+  quantity    Int
+  day         String
+  createdAt   DateTime  @default(now())
+
+  @@index([workspaceId, metric, day])
+}
+
+model BillingEvent {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  kind        String
+  payload     String
+  createdAt   DateTime  @default(now())
+}

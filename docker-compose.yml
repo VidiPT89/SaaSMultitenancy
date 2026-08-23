@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: firma
+      POSTGRES_PASSWORD: firma
+      POSTGRES_DB: firma
+    ports:
+      - "55435:5432"
+    volumes:
+      - firma_pg:/var/lib/postgresql/data
+
+volumes:
+  firma_pg:
