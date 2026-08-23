@@ -31,12 +31,15 @@ export function Landing() {
               </span>
             ))}
           </div>
+        <div className="mt-10 flex flex-wrap items-center gap-4">
           <Link
             href="/app"
-            className="mt-10 inline-flex rounded-full bg-[#ff7a00] px-6 py-3 text-sm font-bold text-black"
+            className="inline-flex rounded-full bg-[#ff7a00] px-6 py-3 text-sm font-bold text-black"
           >
             {t.enter}
           </Link>
+          <p className="max-w-xs text-xs text-[#f4e6c8]/55">{t.norteHint}</p>
+        </div>
         </div>
         <div className="grid gap-3">
           {['iVidi.dev', 'Atelier Cascais', 'Estúdio Norte'].map((name, index) => (

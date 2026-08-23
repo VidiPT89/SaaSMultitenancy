@@ -9,7 +9,9 @@ FIRMA is a Next.js tenancy desk: each company is a walled workspace. Admins invi
 ## ✨ Main Features
 
 - 🏢 **Isolated workspaces** — members only see companies they belong to
-- 📒 **Company ledger** — notes stay inside the wall, eight sheets on free
+- 📒 **Company ledger** — notes stay inside the wall, search, pin and eight sheets on free
+- 🎨 **Hue per company** — ember, amber or paper so each wall looks different
+- 🔁 **Workspace switcher** — jump companies from the header without leaking data
 - 📨 **Invites and roles** — admin or member, inbox, copy and revoke
 - 🛡️ **Last admin lock** — the last admin cannot leave or step down
 - 💳 **Free and paid** — Stripe Checkout subscriptions when keys exist
@@ -91,6 +93,7 @@ Clerk is optional. Leave those keys empty to sign in as a seeded identity. Strip
 5. Admins invite members, change roles or revoke tokens. The free plan stops at three seats and eight ledger sheets.
 6. Record usage, pin a sheet and watch the activity stream. Upgrade or return to free locally or through Stripe.
 7. Sign in as Convidado to see the invite inbox, or accept the token `atelier-guest`.
+8. Sign in as David and open `/app/norte`. The wall closes. Sign in as Nuno to read the northern ledger.
 
 ## 🔌 API Endpoints
 
@@ -101,7 +104,7 @@ Clerk is optional. Leave those keys empty to sign in as a seeded identity. Strip
 | GET / PATCH | `/api/workspaces/:slug` | Isolated workspace payload and rename |
 | POST / DELETE | `/api/workspaces/:slug/invite` | Invite a member or revoke a token |
 | PATCH / DELETE | `/api/workspaces/:slug/members` | Change a role, remove a member or leave |
-| POST | `/api/workspaces/:slug/notes` | Pin a ledger sheet |
+| POST / PATCH / DELETE | `/api/workspaces/:slug/notes` | Write, pin or pull a ledger sheet |
 | POST | `/api/workspaces/:slug/usage` | Record a usage job |
 | POST / DELETE | `/api/workspaces/:slug/billing` | Start Stripe checkout, local upgrade or downgrade |
 | POST | `/api/invites/accept` | Accept an invite token |
@@ -113,7 +116,7 @@ Clerk is optional. Leave those keys empty to sign in as a seeded identity. Strip
 npm test
 ```
 
-`node:test` checks the free-plan seat wall, ledger limit, last-admin lock and company slugs.
+`node:test` checks the free-plan seat wall, ledger and job limits, last-admin lock, initials, activity export and company slugs.
 
 ## 📄 License
 

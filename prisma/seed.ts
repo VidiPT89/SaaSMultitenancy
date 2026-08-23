@@ -32,6 +32,7 @@ async function main() {
       name: 'iVidi.dev',
       nameEn: 'iVidi.dev',
       plan: 'paid',
+      hue: 'ember',
     },
   })
   const atelier = await prisma.workspace.create({
@@ -40,6 +41,16 @@ async function main() {
       name: 'Atelier Cascais',
       nameEn: 'Cascais Atelier',
       plan: 'free',
+      hue: 'amber',
+    },
+  })
+  const norte = await prisma.workspace.create({
+    data: {
+      slug: 'norte',
+      name: 'Estúdio Norte',
+      nameEn: 'North Studio',
+      plan: 'free',
+      hue: 'paper',
     },
   })
 
@@ -49,6 +60,7 @@ async function main() {
       { workspaceId: ividi.id, userId: ana.id, role: 'member' },
       { workspaceId: atelier.id, userId: ana.id, role: 'admin' },
       { workspaceId: atelier.id, userId: nuno.id, role: 'member' },
+      { workspaceId: norte.id, userId: nuno.id, role: 'admin' },
     ],
   })
 
@@ -85,6 +97,14 @@ async function main() {
         titleEn: 'Site briefing',
         body: 'Só a iVidi vê esta folha.',
         bodyEn: 'Only iVidi sees this sheet.',
+        pinned: true,
+      },
+      {
+        workspaceId: norte.id,
+        title: 'Rolo do norte',
+        titleEn: 'Northern roll',
+        body: 'Esta folha só existe para o Nuno.',
+        bodyEn: 'This sheet exists only for Nuno.',
       },
       {
         workspaceId: atelier.id,

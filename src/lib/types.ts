@@ -14,6 +14,7 @@ export type WorkspaceCard = {
   plan: string
   role: string
   members: number
+  hue: string
 }
 
 export type UsageBar = { day: string; quantity: number }
@@ -31,13 +32,21 @@ export type WorkspacePayload = {
   name: string
   nameEn: string
   plan: string
+  hue: string
   role: string
   me: string
   members: { id: string; name: string; email: string; role: string }[]
   invites: { id: string; email: string; role: string; token: string }[]
-  notes: { id: string; title: string; titleEn: string; body: string; bodyEn: string }[]
+  notes: { id: string; title: string; titleEn: string; body: string; bodyEn: string; pinned: boolean }[]
   activity: { id: string; kind: string; message: string; messageEn: string; createdAt: string }[]
   billing: { id: string; kind: string; createdAt: string }[]
-  usage: { jobs: UsageBar[]; invites: UsageBar[]; seats: number; jobTotal: number; noteLimit: number }
+  usage: {
+    jobs: UsageBar[]
+    invites: UsageBar[]
+    seats: number
+    jobTotal: number
+    noteLimit: number
+    jobLimit: number
+  }
   clerk: boolean
 }

@@ -1,6 +1,8 @@
 'use client'
 
 import { useLocale } from '@/i18n/LocaleProvider'
+import { activityCsv } from '@/lib/export'
+import { hues, initials } from '@/lib/hue'
 import { readJson } from '@/lib/http'
 import type { UsageBar, WorkspacePayload } from '@/lib/types'
 import { motion } from 'framer-motion'
@@ -39,6 +41,7 @@ export function WorkspaceDesk({ slug }: { slug: string }) {
   const [name, setName] = useState('')
   const [error, setError] = useState('')
   const [copied, setCopied] = useState('')
+  const [query, setQuery] = useState('')
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/workspaces/${slug}`)
@@ -73,7 +76,7 @@ export function WorkspaceDesk({ slug }: { slug: string }) {
       method: 'POST',
       body: JSON.stringify({ title, titleEn: title, body, bodyEn: body }),
     })
-    if (res.status === 402) setError(t.noteLimit)
+    if (res.status === 402) setError(t.noteLimit || t.jobLimit)
     setTitle('')
     setBody('')
     await load()
@@ -93,18 +96,30 @@ export function WorkspaceDesk({ slug }: { slug: string }) {
   if (!data) return <p className="text-[#f4e6c8]/60">{t.isolation}</p>
 
   const tabs: Tab[] = ['overview', 'ledger', 'team', 'billing']
+  const accent = hues[data.hue as keyof typeof hues] ?? hues.ember
+  const notes = data.notes.filter((item) => {
+    const hay = `${item.title} ${item.titleEn} ${item.body} ${item.bodyEn}`.toLowerCase()
+    return hay.includes(query.toLowerCase())
+  })
 
   return (
-    <div className="grid gap-6">
-      <header className="panel p-6">
-        <p className="display text-6xl tracking-[0.14em] text-[#ffaa00]">
+    <div className="grid gap-6" style={{ ['--accent' as string]: accent }}>
+      <header className="panel p-6" style={{ borderColor: `${accent}55` }}>
+        <p className="display text-6xl tracking-[0.14em]" style={{ color: accent }}>
           {locale === 'pt' ? data.name : data.nameEn}
         </p>
         <p className="mt-2 text-sm text-[#f4e6c8]/70">{t.isolation}</p>
         <div className="mt-4 flex flex-wrap gap-3 text-sm">
-          <span className="rounded-full bg-[#ff7a00] px-3 py-1 font-bold text-black">
+          <span className="rounded-full px-3 py-1 font-bold text-black" style={{ background: accent }}>
             {data.plan === 'paid' ? t.paid : t.free}
           </span>
+          <button
+            type="button"
+            className="text-xs text-[#f4e6c8]/60"
+            onClick={() => navigator.clipboard.writeText(data.slug)}
+          >
+            {t.slug}: {data.slug}
+          </button>
           <span>
             {t.role}: {data.role === 'admin' ? t.admin : t.member}
           </span>
@@ -117,7 +132,8 @@ export function WorkspaceDesk({ slug }: { slug: string }) {
             <button
               key={item}
               type="button"
-              className={`rounded-full px-4 py-1 text-xs font-bold tracking-[0.14em] ${tab === item ? 'bg-[#ff7a00] text-black' : 'border border-[#f4e6c8]/20'}`}
+              className={`rounded-full px-4 py-1 text-xs font-bold tracking-[0.14em] ${tab === item ? 'text-black' : 'border border-[#f4e6c8]/20'}`}
+              style={tab === item ? { background: accent } : undefined}
               onClick={() => setTab(item)}
             >
               {t[item]}
@@ -130,10 +146,13 @@ export function WorkspaceDesk({ slug }: { slug: string }) {
         <section className="grid gap-4 lg:grid-cols-2">
           <article className="panel p-5">
             <p className="display text-3xl tracking-[0.12em] text-[#ffaa00]">{t.jobs}</p>
-            <p className="mt-1 text-sm text-[#f4e6c8]/60">{data.usage.jobTotal}</p>
+            <p className="mt-1 text-sm text-[#f4e6c8]/60">
+              {data.usage.jobTotal}/{data.usage.jobLimit === 999 ? '∞' : data.usage.jobLimit}
+            </p>
             <Bars series={data.usage.jobs} />
             <button type="button" className="mt-4 rounded-full border border-[#ff7a00] px-3 py-1 text-[#ff7a00]" onClick={async () => {
-              await fetch(`/api/workspaces/${slug}/usage`, { method: 'POST' })
+              const res = await fetch(`/api/workspaces/${slug}/usage`, { method: 'POST' })
+              if (res.status === 402) setError(t.jobLimit)
               await load()
             }}>
               {t.runJob}
@@ -141,6 +160,21 @@ export function WorkspaceDesk({ slug }: { slug: string }) {
           </article>
           <article className="panel p-5">
             <p className="display text-3xl tracking-[0.12em] text-[#ffaa00]">{t.activity}</p>
+            <button
+              type="button"
+              className="mb-3 text-xs text-[#ff7a00]"
+              onClick={() => {
+                const blob = new Blob([activityCsv(data.activity, locale)], { type: 'text/csv' })
+                const url = URL.createObjectURL(blob)
+                const link = document.createElement('a')
+                link.href = url
+                link.download = `${data.slug}-activity.csv`
+                link.click()
+                URL.revokeObjectURL(url)
+              }}
+            >
+              {t.export}
+            </button>
             <ul className="mt-3 grid gap-2 text-sm text-[#f4e6c8]/75">
               {data.activity.map((item) => (
                 <li key={item.id}>{locale === 'pt' ? item.message : item.messageEn}</li>
@@ -156,11 +190,37 @@ export function WorkspaceDesk({ slug }: { slug: string }) {
           <p className="mt-1 text-sm text-[#f4e6c8]/60">
             {data.notes.length}/{data.usage.noteLimit === 999 ? '∞' : data.usage.noteLimit}
           </p>
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={t.search}
+            className="mt-3 w-full rounded-full border border-[#f4e6c8]/20 bg-black/40 px-4 py-2"
+          />
           <div className="mt-4 grid gap-3 md:grid-cols-2">
-            {data.notes.map((item) => (
-              <article key={item.id} className="rounded-2xl border border-[#f4e6c8]/10 p-4">
+            {notes.map((item) => (
+              <article key={item.id} className={`rounded-2xl border p-4 ${item.pinned ? 'border-[#ffaa00]/50' : 'border-[#f4e6c8]/10'}`}>
                 <p className="display text-2xl text-[#ffaa00]">{locale === 'pt' ? item.title : item.titleEn}</p>
                 <p className="mt-2 text-sm">{locale === 'pt' ? item.body : item.bodyEn}</p>
+                <div className="mt-3 flex gap-3 text-xs">
+                  <button type="button" className="text-[#ff7a00]" onClick={async () => {
+                    await fetch(`/api/workspaces/${slug}/notes`, {
+                      method: 'PATCH',
+                      body: JSON.stringify({ id: item.id, pinned: !item.pinned }),
+                    })
+                    await load()
+                  }}>
+                    {item.pinned ? t.unpin : t.pin}
+                  </button>
+                  <button type="button" onClick={async () => {
+                    await fetch(`/api/workspaces/${slug}/notes`, {
+                      method: 'DELETE',
+                      body: JSON.stringify({ id: item.id }),
+                    })
+                    await load()
+                  }}>
+                    {t.remove}
+                  </button>
+                </div>
               </article>
             ))}
           </div>
@@ -187,7 +247,8 @@ export function WorkspaceDesk({ slug }: { slug: string }) {
           <ul className="mt-4 grid gap-2">
             {data.members.map((item) => (
               <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-[#f4e6c8]/10 py-2">
-                <span>
+                <span className="flex items-center gap-2">
+                  <span className="avatar">{initials(item.name)}</span>
                   {item.name} · {item.email}
                 </span>
                 <span className="flex gap-2">
@@ -268,6 +329,7 @@ export function WorkspaceDesk({ slug }: { slug: string }) {
             type="button"
             className="mt-5 rounded-full border border-[#f4e6c8]/25 px-4 py-2"
             onClick={async () => {
+              if (!window.confirm(t.confirmLeave)) return
               const res = await fetch(`/api/workspaces/${slug}/members`, {
                 method: 'DELETE',
                 body: JSON.stringify({ userId: data.me }),

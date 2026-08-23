@@ -5,7 +5,7 @@ const globalForPrisma = globalThis as unknown as {
   prismaStamp?: string
 }
 
-const STAMP = 'firma-v2'
+const STAMP = 'firma-v3'
 
 export const prisma =
   globalForPrisma.prismaStamp === STAMP && globalForPrisma.prisma

@@ -1,5 +1,6 @@
 export const FREE_MEMBER_LIMIT = 3
 export const FREE_NOTE_LIMIT = 8
+export const FREE_JOB_LIMIT = 40
 export const FREE_SEAT_METRIC = 'seats'
 export const JOB_METRIC = 'jobs'
 export const INVITE_METRIC = 'invites'
@@ -14,6 +15,10 @@ export function canInviteOnFree(memberCount: number): boolean {
 
 export function canAddNoteOnFree(noteCount: number): boolean {
   return noteCount < FREE_NOTE_LIMIT
+}
+
+export function canRecordJobOnFree(jobTotal: number): boolean {
+  return jobTotal < FREE_JOB_LIMIT
 }
 
 export function isLastAdmin(members: { role: string; userId: string }[], userId: string) {

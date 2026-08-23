@@ -1,12 +1,17 @@
 'use client'
 
 import { useLocale } from '@/i18n/LocaleProvider'
+import { useSession } from '@/i18n/SessionProvider'
+import { hues } from '@/lib/hue'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
 
 export function SiteChrome({ children }: { children: ReactNode }) {
   const { t, locale, setLocale } = useLocale()
+  const { data } = useSession()
+  const path = usePathname()
 
   return (
     <div className="relative z-10 min-h-dvh">
@@ -16,8 +21,27 @@ export function SiteChrome({ children }: { children: ReactNode }) {
             {t.brand}
           </Link>
           <div className="flex items-center gap-3">
-            <Link href="/app" className="text-xs font-bold tracking-[0.16em] text-[#ff7a00]">
+            {data.workspaces.length > 0 && (
+              <nav className="hidden max-w-[42vw] items-center gap-1 overflow-x-auto md:flex">
+                {data.workspaces.map((item) => {
+                  const active = path === `/app/${item.slug}`
+                  const color = hues[item.hue as keyof typeof hues] ?? hues.ember
+                  return (
+                    <Link
+                      key={item.slug}
+                      href={`/app/${item.slug}`}
+                      className={`rounded-full px-3 py-1 text-[11px] font-bold tracking-[0.12em] ${active ? 'text-black' : 'border border-[#f4e6c8]/20'}`}
+                      style={active ? { background: color } : { color }}
+                    >
+                      {locale === 'pt' ? item.name : item.nameEn}
+                    </Link>
+                  )
+                })}
+              </nav>
+            )}
+            <Link href="/app" className="relative text-xs font-bold tracking-[0.16em] text-[#ff7a00]">
               {t.enter}
+              {data.inbox.length > 0 && <span className="dot" />}
             </Link>
             <div className="flex overflow-hidden rounded-full border border-[#f4e6c8]/25">
               <button

@@ -1,5 +1,6 @@
 import { currentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { hueFor } from '@/lib/hue'
 import { slugify } from '@/lib/tenant'
 import { recordActivity } from '@/lib/activity'
 import { recordUsage } from '@/lib/usage'
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
       slug,
       name,
       nameEn: body.nameEn?.trim() || name,
+      hue: hueFor(slug),
       members: { create: { userId: user.id, role: 'admin' } },
     },
   })

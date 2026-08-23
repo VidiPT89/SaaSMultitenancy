@@ -23,6 +23,7 @@ model Workspace {
   name                 String
   nameEn               String
   plan                 String         @default("free")
+  hue                  String         @default("ember")
   stripeCustomerId     String?
   stripeSubscriptionId String?
   createdAt            DateTime       @default(now())
@@ -79,6 +80,7 @@ model LedgerNote {
   titleEn     String
   body        String
   bodyEn      String
+  pinned      Boolean   @default(false)
   createdAt   DateTime  @default(now())
 }
 

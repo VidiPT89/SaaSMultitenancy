@@ -34,6 +34,7 @@ export async function GET() {
       plan: item.workspace.plan,
       role: item.role,
       members: item.workspace._count.members,
+      hue: item.workspace.hue,
     })),
     inbox: inbox.map((item) => ({
       token: item.token,

@@ -1,36 +1,27 @@
 'use client'
 
 import { useLocale } from '@/i18n/LocaleProvider'
+import { useSession } from '@/i18n/SessionProvider'
+import { hues } from '@/lib/hue'
 import { readJson } from '@/lib/http'
-import type { DeskPayload } from '@/lib/types'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { useCallback, useEffect, useState } from 'react'
-
-const empty: DeskPayload = { user: null, demoUsers: [], clerk: false, workspaces: [], inbox: [] }
+import { useState } from 'react'
 
 export function Desk() {
   const { t, locale } = useLocale()
-  const [data, setData] = useState<DeskPayload>(empty)
+  const { data, refresh } = useSession()
   const [name, setName] = useState('')
   const [token, setToken] = useState('')
 
-  const load = useCallback(async () => {
-    setData(await readJson(await fetch('/api/session'), empty))
-  }, [])
-
-  useEffect(() => {
-    void load()
-  }, [load])
-
   async function signIn(userId: string) {
     await fetch('/api/session', { method: 'POST', body: JSON.stringify({ userId }) })
-    await load()
+    await refresh()
   }
 
   async function signOut() {
     await fetch('/api/session', { method: 'DELETE' })
-    await load()
+    await refresh()
   }
 
   async function createWorkspace() {
@@ -41,7 +32,7 @@ export function Desk() {
     const json = await readJson<{ slug?: string }>(res, {})
     setName('')
     if (json.slug) window.location.href = `/app/${json.slug}`
-    else await load()
+    else await refresh()
   }
 
   async function accept(value = token) {
@@ -51,6 +42,7 @@ export function Desk() {
     })
     const json = await readJson<{ slug?: string }>(res, {})
     if (json.slug) window.location.href = `/app/${json.slug}`
+    await refresh()
   }
 
   return (
@@ -132,28 +124,32 @@ export function Desk() {
               <p className="text-[#f4e6c8]/60">{t.empty}</p>
             ) : (
               <div className="grid gap-3 md:grid-cols-2">
-                {data.workspaces.map((item, index) => (
-                  <motion.article
-                    key={item.slug}
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.08 }}
-                    className="panel p-5"
-                  >
-                    <p className="display text-3xl tracking-[0.12em] text-[#ffaa00]">
-                      {locale === 'pt' ? item.name : item.nameEn}
-                    </p>
-                    <p className="mt-2 text-sm text-[#f4e6c8]/65">
-                      {item.plan === 'paid' ? t.paid : t.free} · {item.role === 'admin' ? t.admin : t.member} · {item.members} {t.seats}
-                    </p>
-                    <div className="meter mt-4">
-                      <span style={{ width: `${Math.min(100, (item.members / 3) * 100)}%` }} />
-                    </div>
-                    <Link href={`/app/${item.slug}`} className="mt-4 inline-block text-[#ff7a00]">
-                      {t.open}
-                    </Link>
-                  </motion.article>
-                ))}
+                {data.workspaces.map((item, index) => {
+                  const color = hues[item.hue as keyof typeof hues] ?? hues.ember
+                  return (
+                    <motion.article
+                      key={item.slug}
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.08 }}
+                      className="panel p-5"
+                      style={{ borderColor: `${color}44` }}
+                    >
+                      <p className="display text-3xl tracking-[0.12em]" style={{ color }}>
+                        {locale === 'pt' ? item.name : item.nameEn}
+                      </p>
+                      <p className="mt-2 text-sm text-[#f4e6c8]/65">
+                        {item.plan === 'paid' ? t.paid : t.free} · {item.role === 'admin' ? t.admin : t.member} · {item.members} {t.seats}
+                      </p>
+                      <div className="meter mt-4">
+                        <span style={{ width: `${Math.min(100, (item.members / 3) * 100)}%`, background: color }} />
+                      </div>
+                      <Link href={`/app/${item.slug}`} className="mt-4 inline-block" style={{ color }}>
+                        {t.open}
+                      </Link>
+                    </motion.article>
+                  )
+                })}
               </div>
             )}
           </section>

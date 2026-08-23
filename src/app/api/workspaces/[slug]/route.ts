@@ -1,7 +1,7 @@
 import { currentUser } from '@/lib/auth'
 import { recordActivity } from '@/lib/activity'
 import { clerkEnabled } from '@/lib/clerk'
-import { FREE_NOTE_LIMIT } from '@/lib/plans'
+import { FREE_JOB_LIMIT, FREE_NOTE_LIMIT } from '@/lib/plans'
 import { prisma } from '@/lib/prisma'
 import { membershipFor } from '@/lib/tenant'
 import { usageSeries } from '@/lib/usage'
@@ -19,7 +19,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
     usageSeries(membership.workspaceId, 'invites'),
     prisma.ledgerNote.findMany({
       where: { workspaceId: membership.workspaceId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ pinned: 'desc' }, { createdAt: 'desc' }],
     }),
     prisma.activity.findMany({
       where: { workspaceId: membership.workspaceId },
@@ -34,6 +34,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
     name: membership.workspace.name,
     nameEn: membership.workspace.nameEn,
     plan: membership.workspace.plan,
+    hue: membership.workspace.hue,
     role: membership.role,
     me: user.id,
     members: membership.workspace.members.map((item) => ({
@@ -54,6 +55,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
       titleEn: item.titleEn,
       body: item.body,
       bodyEn: item.bodyEn,
+      pinned: item.pinned,
     })),
     activity: activity.map((item) => ({
       id: item.id,
@@ -73,6 +75,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
       seats: membership.workspace.members.length,
       jobTotal: jobs.reduce((sum, item) => sum + item.quantity, 0),
       noteLimit: membership.workspace.plan === 'paid' ? 999 : FREE_NOTE_LIMIT,
+      jobLimit: membership.workspace.plan === 'paid' ? 999 : FREE_JOB_LIMIT,
     },
   })
 }
