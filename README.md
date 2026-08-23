@@ -9,10 +9,12 @@ FIRMA is a Next.js tenancy desk: each company is a walled workspace. Admins invi
 ## ✨ Main Features
 
 - 🏢 **Isolated workspaces** — members only see companies they belong to
-- 📨 **Invites and roles** — admin or member, accepted with a token
+- 📒 **Company ledger** — notes stay inside the wall, eight sheets on free
+- 📨 **Invites and roles** — admin or member, inbox, copy and revoke
+- 🛡️ **Last admin lock** — the last admin cannot leave or step down
 - 💳 **Free and paid** — Stripe Checkout subscriptions when keys exist
 - 🪝 **Billing webhooks** — checkout, invoice and subscription events
-- 📊 **Usage metrics** — jobs, invites and seat count
+- 📊 **Usage metrics** — jobs, invites, seats and an activity stream
 - 🌍 **PT / EN toggle** — remembered in `localStorage`
 - 🎬 **Motion** — grain, ember glow and rising usage bars
 
@@ -85,9 +87,10 @@ Clerk is optional. Leave those keys empty to sign in as a seeded identity. Strip
 1. Toggle **PT** or **EN** in the header.
 2. Open the desk and pick an identity (David sees iVidi.dev, Ana sees both companies).
 3. Create a company or open an existing wall.
-4. Admins invite members. The free plan stops at three seats.
-5. Record usage and watch the bars. Upgrade to paid locally or through Stripe.
-6. Accept a pending invite with the token `atelier-guest` while signed in as Convidado.
+4. Open a wall. The desk, ledger, team and billing tabs stay inside that company.
+5. Admins invite members, change roles or revoke tokens. The free plan stops at three seats and eight ledger sheets.
+6. Record usage, pin a sheet and watch the activity stream. Upgrade or return to free locally or through Stripe.
+7. Sign in as Convidado to see the invite inbox, or accept the token `atelier-guest`.
 
 ## 🔌 API Endpoints
 
@@ -95,10 +98,12 @@ Clerk is optional. Leave those keys empty to sign in as a seeded identity. Strip
 |--------|----------|-------------|
 | GET / POST / DELETE | `/api/session` | Current identity and demo sign-in |
 | POST | `/api/workspaces` | Create a company workspace |
-| GET | `/api/workspaces/:slug` | Isolated workspace payload |
-| POST | `/api/workspaces/:slug/invite` | Invite a member |
+| GET / PATCH | `/api/workspaces/:slug` | Isolated workspace payload and rename |
+| POST / DELETE | `/api/workspaces/:slug/invite` | Invite a member or revoke a token |
+| PATCH / DELETE | `/api/workspaces/:slug/members` | Change a role, remove a member or leave |
+| POST | `/api/workspaces/:slug/notes` | Pin a ledger sheet |
 | POST | `/api/workspaces/:slug/usage` | Record a usage job |
-| POST | `/api/workspaces/:slug/billing` | Start Stripe checkout or local upgrade |
+| POST / DELETE | `/api/workspaces/:slug/billing` | Start Stripe checkout, local upgrade or downgrade |
 | POST | `/api/invites/accept` | Accept an invite token |
 | POST | `/api/webhooks/stripe` | Billing webhooks |
 
@@ -108,7 +113,7 @@ Clerk is optional. Leave those keys empty to sign in as a seeded identity. Strip
 npm test
 ```
 
-`node:test` checks the free-plan seat wall and company slugs.
+`node:test` checks the free-plan seat wall, ledger limit, last-admin lock and company slugs.
 
 ## 📄 License
 

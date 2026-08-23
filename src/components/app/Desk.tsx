@@ -7,7 +7,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 
-const empty: DeskPayload = { user: null, demoUsers: [], clerk: false, workspaces: [] }
+const empty: DeskPayload = { user: null, demoUsers: [], clerk: false, workspaces: [], inbox: [] }
 
 export function Desk() {
   const { t, locale } = useLocale()
@@ -44,10 +44,10 @@ export function Desk() {
     else await load()
   }
 
-  async function accept() {
+  async function accept(value = token) {
     const res = await fetch('/api/invites/accept', {
       method: 'POST',
-      body: JSON.stringify({ token }),
+      body: JSON.stringify({ token: value }),
     })
     const json = await readJson<{ slug?: string }>(res, {})
     if (json.slug) window.location.href = `/app/${json.slug}`
@@ -87,11 +87,31 @@ export function Desk() {
 
       {data.user && (
         <>
+          {data.inbox.length > 0 && (
+            <section className="panel glow p-5">
+              <p className="display text-3xl tracking-[0.12em] text-[#ffaa00]">{t.inbox}</p>
+              <ul className="mt-3 grid gap-2">
+                {data.inbox.map((item) => (
+                  <li key={item.token} className="flex flex-wrap items-center justify-between gap-2">
+                    <span>{locale === 'pt' ? item.name : item.nameEn}</span>
+                    <button
+                      type="button"
+                      className="rounded-full bg-[#ff7a00] px-3 py-1 text-sm font-bold text-black"
+                      onClick={() => accept(item.token)}
+                    >
+                      {t.accept}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           <section>
             <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
               <p className="display text-5xl tracking-[0.14em] text-[#ffaa00]">{t.workspaces}</p>
               <form
-                className="flex gap-2"
+                className="flex flex-wrap gap-2"
                 onSubmit={(event) => {
                   event.preventDefault()
                   void createWorkspace()
@@ -124,8 +144,11 @@ export function Desk() {
                       {locale === 'pt' ? item.name : item.nameEn}
                     </p>
                     <p className="mt-2 text-sm text-[#f4e6c8]/65">
-                      {item.plan === 'paid' ? t.paid : t.free} · {item.role} · {item.members} {t.seats}
+                      {item.plan === 'paid' ? t.paid : t.free} · {item.role === 'admin' ? t.admin : t.member} · {item.members} {t.seats}
                     </p>
+                    <div className="meter mt-4">
+                      <span style={{ width: `${Math.min(100, (item.members / 3) * 100)}%` }} />
+                    </div>
                     <Link href={`/app/${item.slug}`} className="mt-4 inline-block text-[#ff7a00]">
                       {t.open}
                     </Link>

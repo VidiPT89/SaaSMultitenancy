@@ -1,6 +1,7 @@
 import { currentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { slugify } from '@/lib/tenant'
+import { recordActivity } from '@/lib/activity'
 import { recordUsage } from '@/lib/usage'
 import { NextResponse } from 'next/server'
 
@@ -24,5 +25,6 @@ export async function POST(request: Request) {
     },
   })
   await recordUsage(workspace.id, 'jobs', 1)
+  await recordActivity(workspace.id, 'create', `${user.name} abriu a empresa.`, `${user.name} opened the company.`)
   return NextResponse.json({ slug: workspace.slug })
 }

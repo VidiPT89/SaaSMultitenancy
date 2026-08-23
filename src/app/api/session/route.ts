@@ -15,6 +15,13 @@ export async function GET() {
         orderBy: { createdAt: 'asc' },
       })
     : []
+  const inbox = user
+    ? await prisma.invitation.findMany({
+        where: { email: user.email, acceptedAt: null },
+        include: { workspace: true },
+        orderBy: { createdAt: 'desc' },
+      })
+    : []
 
   return NextResponse.json({
     clerk: clerkEnabled(),
@@ -27,6 +34,12 @@ export async function GET() {
       plan: item.workspace.plan,
       role: item.role,
       members: item.workspace._count.members,
+    })),
+    inbox: inbox.map((item) => ({
+      token: item.token,
+      email: item.email,
+      name: item.workspace.name,
+      nameEn: item.workspace.nameEn,
     })),
   })
 }

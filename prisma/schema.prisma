@@ -30,6 +30,8 @@ model Workspace {
   invites              Invitation[]
   usage                UsagePoint[]
   billing              BillingEvent[]
+  notes                LedgerNote[]
+  activities           Activity[]
 }
 
 model Membership {
@@ -67,6 +69,27 @@ model UsagePoint {
   createdAt   DateTime  @default(now())
 
   @@index([workspaceId, metric, day])
+}
+
+model LedgerNote {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  title       String
+  titleEn     String
+  body        String
+  bodyEn      String
+  createdAt   DateTime  @default(now())
+}
+
+model Activity {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  kind        String
+  message     String
+  messageEn   String
+  createdAt   DateTime  @default(now())
 }
 
 model BillingEvent {

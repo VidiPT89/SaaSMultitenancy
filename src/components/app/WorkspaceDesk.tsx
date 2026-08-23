@@ -4,6 +4,7 @@ import { useLocale } from '@/i18n/LocaleProvider'
 import { readJson } from '@/lib/http'
 import type { UsageBar, WorkspacePayload } from '@/lib/types'
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 
 function Bars({ series }: { series: UsageBar[] }) {
@@ -24,16 +25,32 @@ function Bars({ series }: { series: UsageBar[] }) {
   )
 }
 
+type Tab = 'overview' | 'ledger' | 'team' | 'billing'
+
 export function WorkspaceDesk({ slug }: { slug: string }) {
   const { t, locale } = useLocale()
   const [data, setData] = useState<WorkspacePayload | null>(null)
+  const [denied, setDenied] = useState(false)
+  const [tab, setTab] = useState<Tab>('overview')
   const [email, setEmail] = useState('')
   const [role, setRole] = useState('member')
+  const [title, setTitle] = useState('')
+  const [body, setBody] = useState('')
+  const [name, setName] = useState('')
   const [error, setError] = useState('')
+  const [copied, setCopied] = useState('')
 
   const load = useCallback(async () => {
-    setData(await readJson(await fetch(`/api/workspaces/${slug}`), null))
-  }, [slug])
+    const res = await fetch(`/api/workspaces/${slug}`)
+    if (res.status === 403 || res.status === 401) {
+      setDenied(true)
+      setData(null)
+      return
+    }
+    const next = await readJson<WorkspacePayload | null>(res, null)
+    setData(next)
+    if (next) setName(locale === 'pt' ? next.name : next.nameEn)
+  }, [slug, locale])
 
   useEffect(() => {
     void load()
@@ -50,21 +67,32 @@ export function WorkspaceDesk({ slug }: { slug: string }) {
     await load()
   }
 
-  async function upgrade() {
-    const json = await readJson<{ url?: string | null }>(
-      await fetch(`/api/workspaces/${slug}/billing`, { method: 'POST' }),
-      {},
-    )
-    if (json.url) window.location.href = json.url
-    else await load()
-  }
-
-  async function runJob() {
-    await fetch(`/api/workspaces/${slug}/usage`, { method: 'POST' })
+  async function addNote() {
+    setError('')
+    const res = await fetch(`/api/workspaces/${slug}/notes`, {
+      method: 'POST',
+      body: JSON.stringify({ title, titleEn: title, body, bodyEn: body }),
+    })
+    if (res.status === 402) setError(t.noteLimit)
+    setTitle('')
+    setBody('')
     await load()
   }
 
+  if (denied) {
+    return (
+      <div className="panel p-8 text-center">
+        <p className="display text-5xl text-[#ffaa00]">{t.wall}</p>
+        <Link href="/app" className="mt-4 inline-block text-[#ff7a00]">
+          {t.enter}
+        </Link>
+      </div>
+    )
+  }
+
   if (!data) return <p className="text-[#f4e6c8]/60">{t.isolation}</p>
+
+  const tabs: Tab[] = ['overview', 'ledger', 'team', 'billing']
 
   return (
     <div className="grid gap-6">
@@ -80,94 +108,234 @@ export function WorkspaceDesk({ slug }: { slug: string }) {
           <span>
             {t.role}: {data.role === 'admin' ? t.admin : t.member}
           </span>
+          <span>
+            {data.usage.seats}/{data.plan === 'paid' ? '∞' : 3} {t.seats}
+          </span>
         </div>
-        {data.role === 'admin' && data.plan === 'free' && (
-          <button type="button" className="mt-4 rounded-full bg-[#ffaa00] px-4 py-2 text-sm font-bold text-black" onClick={upgrade}>
-            {t.upgrade}
-          </button>
-        )}
-        <p className="mt-3 text-xs text-[#f4e6c8]/50">{t.stripeHint}</p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          {tabs.map((item) => (
+            <button
+              key={item}
+              type="button"
+              className={`rounded-full px-4 py-1 text-xs font-bold tracking-[0.14em] ${tab === item ? 'bg-[#ff7a00] text-black' : 'border border-[#f4e6c8]/20'}`}
+              onClick={() => setTab(item)}
+            >
+              {t[item]}
+            </button>
+          ))}
+        </div>
       </header>
 
-      <section className="grid gap-4 lg:grid-cols-2">
-        <article className="panel p-5">
-          <p className="display text-3xl tracking-[0.12em] text-[#ffaa00]">{t.jobs}</p>
-          <Bars series={data.usage.jobs} />
-          <button type="button" className="mt-4 rounded-full border border-[#ff7a00] px-3 py-1 text-[#ff7a00]" onClick={runJob}>
-            {t.runJob}
-          </button>
-        </article>
-        <article className="panel p-5">
-          <p className="display text-3xl tracking-[0.12em] text-[#ffaa00]">{t.invites}</p>
-          <Bars series={data.usage.invites} />
-          <p className="mt-4 text-sm">
-            {t.seats}: {data.usage.seats}
-          </p>
-        </article>
-      </section>
-
-      <section className="panel p-5">
-        <p className="display text-3xl tracking-[0.12em] text-[#ffaa00]">{t.members}</p>
-        <ul className="mt-4 grid gap-2">
-          {data.members.map((item) => (
-            <li key={item.id} className="flex justify-between border-b border-[#f4e6c8]/10 py-2">
-              <span>
-                {item.name} · {item.email}
-              </span>
-              <span>{item.role === 'admin' ? t.admin : t.member}</span>
-            </li>
-          ))}
-        </ul>
-        {data.role === 'admin' && (
-          <form
-            className="mt-4 flex flex-wrap gap-2"
-            onSubmit={(event) => {
-              event.preventDefault()
-              void invite()
-            }}
-          >
-            <input
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder={t.email}
-              className="rounded-full border border-[#f4e6c8]/20 bg-black/40 px-4 py-2"
-            />
-            <select
-              value={role}
-              onChange={(event) => setRole(event.target.value)}
-              className="rounded-full border border-[#f4e6c8]/20 bg-black px-3 py-2"
-            >
-              <option value="member">{t.member}</option>
-              <option value="admin">{t.admin}</option>
-            </select>
-            <button type="submit" className="rounded-full bg-[#ff7a00] px-4 py-2 text-sm font-bold text-black">
-              {t.invite}
+      {tab === 'overview' && (
+        <section className="grid gap-4 lg:grid-cols-2">
+          <article className="panel p-5">
+            <p className="display text-3xl tracking-[0.12em] text-[#ffaa00]">{t.jobs}</p>
+            <p className="mt-1 text-sm text-[#f4e6c8]/60">{data.usage.jobTotal}</p>
+            <Bars series={data.usage.jobs} />
+            <button type="button" className="mt-4 rounded-full border border-[#ff7a00] px-3 py-1 text-[#ff7a00]" onClick={async () => {
+              await fetch(`/api/workspaces/${slug}/usage`, { method: 'POST' })
+              await load()
+            }}>
+              {t.runJob}
             </button>
-          </form>
-        )}
-        {error && <p className="mt-2 text-sm text-[#ff7a00]">{error}</p>}
-        {data.invites.length > 0 && (
-          <div className="mt-4 text-sm text-[#f4e6c8]/70">
-            <p>{t.pending}</p>
-            {data.invites.map((item) => (
-              <p key={item.id}>
-                {item.email} · {item.token}
-              </p>
+          </article>
+          <article className="panel p-5">
+            <p className="display text-3xl tracking-[0.12em] text-[#ffaa00]">{t.activity}</p>
+            <ul className="mt-3 grid gap-2 text-sm text-[#f4e6c8]/75">
+              {data.activity.map((item) => (
+                <li key={item.id}>{locale === 'pt' ? item.message : item.messageEn}</li>
+              ))}
+            </ul>
+          </article>
+        </section>
+      )}
+
+      {tab === 'ledger' && (
+        <section className="panel p-5">
+          <p className="display text-3xl tracking-[0.12em] text-[#ffaa00]">{t.ledger}</p>
+          <p className="mt-1 text-sm text-[#f4e6c8]/60">
+            {data.notes.length}/{data.usage.noteLimit === 999 ? '∞' : data.usage.noteLimit}
+          </p>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {data.notes.map((item) => (
+              <article key={item.id} className="rounded-2xl border border-[#f4e6c8]/10 p-4">
+                <p className="display text-2xl text-[#ffaa00]">{locale === 'pt' ? item.title : item.titleEn}</p>
+                <p className="mt-2 text-sm">{locale === 'pt' ? item.body : item.bodyEn}</p>
+              </article>
             ))}
           </div>
-        )}
-      </section>
+          <form
+            className="mt-5 grid gap-2"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void addNote()
+            }}
+          >
+            <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder={t.noteTitle} className="rounded-full border border-[#f4e6c8]/20 bg-black/40 px-4 py-2" />
+            <textarea value={body} onChange={(event) => setBody(event.target.value)} placeholder={t.noteBody} className="min-h-24 rounded-2xl border border-[#f4e6c8]/20 bg-black/40 px-4 py-2" />
+            <button type="submit" className="w-fit rounded-full bg-[#ff7a00] px-4 py-2 text-sm font-bold text-black">
+              {t.addNote}
+            </button>
+          </form>
+          {error && <p className="mt-2 text-sm text-[#ff7a00]">{error}</p>}
+        </section>
+      )}
 
-      <section className="panel p-5">
-        <p className="display text-3xl tracking-[0.12em] text-[#ffaa00]">{t.webhook}</p>
-        <ul className="mt-3 text-sm text-[#f4e6c8]/70">
-          {data.billing.map((item) => (
-            <li key={item.id}>
-              {item.kind} · {item.createdAt.slice(0, 10)}
-            </li>
-          ))}
-        </ul>
-      </section>
+      {tab === 'team' && (
+        <section className="panel p-5">
+          <p className="display text-3xl tracking-[0.12em] text-[#ffaa00]">{t.members}</p>
+          <ul className="mt-4 grid gap-2">
+            {data.members.map((item) => (
+              <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-[#f4e6c8]/10 py-2">
+                <span>
+                  {item.name} · {item.email}
+                </span>
+                <span className="flex gap-2">
+                  {data.role === 'admin' && item.id !== data.me && (
+                    <>
+                      <button type="button" className="text-[#ff7a00]" onClick={async () => {
+                        const res = await fetch(`/api/workspaces/${slug}/members`, {
+                          method: 'PATCH',
+                          body: JSON.stringify({ userId: item.id, role: item.role === 'admin' ? 'member' : 'admin' }),
+                        })
+                        if (res.status === 409) setError(t.lastAdmin)
+                        await load()
+                      }}>
+                        {item.role === 'admin' ? t.member : t.admin}
+                      </button>
+                      <button type="button" onClick={async () => {
+                        const res = await fetch(`/api/workspaces/${slug}/members`, {
+                          method: 'DELETE',
+                          body: JSON.stringify({ userId: item.id }),
+                        })
+                        if (res.status === 409) setError(t.lastAdmin)
+                        await load()
+                      }}>
+                        {t.remove}
+                      </button>
+                    </>
+                  )}
+                  {item.id === data.me ? (item.role === 'admin' ? t.admin : t.member) : item.role === 'admin' ? t.admin : t.member}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {data.role === 'admin' && (
+            <form
+              className="mt-4 flex flex-wrap gap-2"
+              onSubmit={(event) => {
+                event.preventDefault()
+                void invite()
+              }}
+            >
+              <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder={t.email} className="rounded-full border border-[#f4e6c8]/20 bg-black/40 px-4 py-2" />
+              <select value={role} onChange={(event) => setRole(event.target.value)} className="rounded-full border border-[#f4e6c8]/20 bg-black px-3 py-2">
+                <option value="member">{t.member}</option>
+                <option value="admin">{t.admin}</option>
+              </select>
+              <button type="submit" className="rounded-full bg-[#ff7a00] px-4 py-2 text-sm font-bold text-black">
+                {t.invite}
+              </button>
+            </form>
+          )}
+          {data.invites.length > 0 && (
+            <div className="mt-4 text-sm text-[#f4e6c8]/70">
+              <p>{t.pending}</p>
+              {data.invites.map((item) => (
+                <p key={item.id} className="mt-1 flex flex-wrap gap-3">
+                  <span>
+                    {item.email} · {item.token}
+                  </span>
+                  <button type="button" className="text-[#ff7a00]" onClick={async () => {
+                    await navigator.clipboard.writeText(item.token)
+                    setCopied(item.id)
+                  }}>
+                    {copied === item.id ? t.copied : t.copy}
+                  </button>
+                  {data.role === 'admin' && (
+                    <button type="button" onClick={async () => {
+                      await fetch(`/api/workspaces/${slug}/invite`, { method: 'DELETE', body: JSON.stringify({ id: item.id }) })
+                      await load()
+                    }}>
+                      {t.revoke}
+                    </button>
+                  )}
+                </p>
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            className="mt-5 rounded-full border border-[#f4e6c8]/25 px-4 py-2"
+            onClick={async () => {
+              const res = await fetch(`/api/workspaces/${slug}/members`, {
+                method: 'DELETE',
+                body: JSON.stringify({ userId: data.me }),
+              })
+              if (res.status === 409) setError(t.lastAdmin)
+              else window.location.href = '/app'
+            }}
+          >
+            {t.leave}
+          </button>
+          {error && <p className="mt-2 text-sm text-[#ff7a00]">{error}</p>}
+        </section>
+      )}
+
+      {tab === 'billing' && (
+        <section className="grid gap-4 lg:grid-cols-2">
+          <article className="panel p-5">
+            <p className="display text-3xl tracking-[0.12em] text-[#ffaa00]">{t.plan}</p>
+            <p className="mt-2">{data.plan === 'paid' ? t.paid : t.free}</p>
+            <p className="mt-3 text-xs text-[#f4e6c8]/50">{t.stripeHint}</p>
+            {data.role === 'admin' && data.plan === 'free' && (
+              <button type="button" className="mt-4 rounded-full bg-[#ffaa00] px-4 py-2 text-sm font-bold text-black" onClick={async () => {
+                const json = await readJson<{ url?: string | null }>(await fetch(`/api/workspaces/${slug}/billing`, { method: 'POST' }), {})
+                if (json.url) window.location.href = json.url
+                else await load()
+              }}>
+                {t.upgrade}
+              </button>
+            )}
+            {data.role === 'admin' && data.plan === 'paid' && (
+              <button type="button" className="mt-4 rounded-full border border-[#ff7a00] px-4 py-2 text-[#ff7a00]" onClick={async () => {
+                await fetch(`/api/workspaces/${slug}/billing`, { method: 'DELETE' })
+                await load()
+              }}>
+                {t.downgrade}
+              </button>
+            )}
+            {data.role === 'admin' && (
+              <form
+                className="mt-5 flex flex-wrap gap-2"
+                onSubmit={async (event) => {
+                  event.preventDefault()
+                  await fetch(`/api/workspaces/${slug}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ name, nameEn: name }),
+                  })
+                  await load()
+                }}
+              >
+                <input value={name} onChange={(event) => setName(event.target.value)} className="rounded-full border border-[#f4e6c8]/20 bg-black/40 px-4 py-2" />
+                <button type="submit" className="rounded-full border border-[#ff7a00] px-4 py-2 text-[#ff7a00]">
+                  {t.rename}
+                </button>
+              </form>
+            )}
+          </article>
+          <article className="panel p-5">
+            <p className="display text-3xl tracking-[0.12em] text-[#ffaa00]">{t.webhook}</p>
+            <ul className="mt-3 text-sm text-[#f4e6c8]/70">
+              {data.billing.map((item) => (
+                <li key={item.id}>
+                  {item.kind} · {item.createdAt.slice(0, 10)}
+                </li>
+              ))}
+            </ul>
+          </article>
+        </section>
+      )}
     </div>
   )
 }

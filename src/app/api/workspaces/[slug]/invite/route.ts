@@ -2,6 +2,7 @@ import { currentUser } from '@/lib/auth'
 import { canInviteOnFree } from '@/lib/plans'
 import { prisma } from '@/lib/prisma'
 import { membershipFor } from '@/lib/tenant'
+import { recordActivity } from '@/lib/activity'
 import { recordUsage } from '@/lib/usage'
 import { NextResponse } from 'next/server'
 import { randomBytes } from 'node:crypto'
@@ -34,5 +35,25 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     },
   })
   await recordUsage(membership.workspaceId, 'invites', 1)
+  await recordActivity(
+    membership.workspaceId,
+    'invite',
+    `${user.name} convidou ${email}.`,
+    `${user.name} invited ${email}.`,
+  )
   return NextResponse.json({ id: invite.id, token: invite.token })
+}
+
+export async function DELETE(request: Request, { params }: { params: Promise<{ slug: string }> }) {
+  const user = await currentUser()
+  if (!user) return NextResponse.json({ error: 'auth' }, { status: 401 })
+  const { slug } = await params
+  const membership = await membershipFor(user, slug)
+  if (!membership || membership.role !== 'admin') {
+    return NextResponse.json({ error: 'role' }, { status: 403 })
+  }
+  const body = (await request.json()) as { id?: string }
+  if (!body.id) return NextResponse.json({ error: 'id' }, { status: 400 })
+  await prisma.invitation.deleteMany({ where: { id: body.id, workspaceId: membership.workspaceId } })
+  return NextResponse.json({ ok: true })
 }

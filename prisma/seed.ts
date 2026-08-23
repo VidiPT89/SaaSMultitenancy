@@ -4,6 +4,8 @@ import { dayKey } from '../src/lib/plans'
 const prisma = new PrismaClient()
 
 async function main() {
+  await prisma.activity.deleteMany()
+  await prisma.ledgerNote.deleteMany()
   await prisma.billingEvent.deleteMany()
   await prisma.usagePoint.deleteMany()
   await prisma.invitation.deleteMany()
@@ -74,6 +76,42 @@ async function main() {
       ],
     })
   }
+
+  await prisma.ledgerNote.createMany({
+    data: [
+      {
+        workspaceId: ividi.id,
+        title: 'Briefing do site',
+        titleEn: 'Site briefing',
+        body: 'Só a iVidi vê esta folha.',
+        bodyEn: 'Only iVidi sees this sheet.',
+      },
+      {
+        workspaceId: atelier.id,
+        title: 'Revelação da semana',
+        titleEn: 'This week\'s development',
+        body: 'O Atelier Cascais guarda o quarto escuro.',
+        bodyEn: 'Cascais Atelier keeps the darkroom.',
+      },
+    ],
+  })
+
+  await prisma.activity.createMany({
+    data: [
+      {
+        workspaceId: ividi.id,
+        kind: 'create',
+        message: 'David Martins abriu a empresa.',
+        messageEn: 'David Martins opened the company.',
+      },
+      {
+        workspaceId: atelier.id,
+        kind: 'invite',
+        message: 'Ana Rocha convidou guest@firma.dev.',
+        messageEn: 'Ana Rocha invited guest@firma.dev.',
+      },
+    ],
+  })
 
   await prisma.billingEvent.createMany({
     data: [

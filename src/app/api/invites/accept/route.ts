@@ -1,3 +1,4 @@
+import { recordActivity } from '@/lib/activity'
 import { currentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
@@ -22,6 +23,7 @@ export async function POST(request: Request) {
     prisma.invitation.update({ where: { id: invite.id }, data: { acceptedAt: new Date() } }),
   ])
 
+  await recordActivity(invite.workspaceId, 'join', `${user.name} entrou na empresa.`, `${user.name} joined the company.`)
   const workspace = await prisma.workspace.findUnique({ where: { id: invite.workspaceId } })
   return NextResponse.json({ slug: workspace?.slug })
 }

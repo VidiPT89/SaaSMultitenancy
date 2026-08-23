@@ -1,3 +1,4 @@
+import { recordActivity } from '@/lib/activity'
 import { currentUser } from '@/lib/auth'
 import { membershipFor } from '@/lib/tenant'
 import { recordUsage } from '@/lib/usage'
@@ -10,5 +11,6 @@ export async function POST(_: Request, { params }: { params: Promise<{ slug: str
   const membership = await membershipFor(user, slug)
   if (!membership) return NextResponse.json({ error: 'wall' }, { status: 403 })
   await recordUsage(membership.workspaceId, 'jobs', 1)
+  await recordActivity(membership.workspaceId, 'job', `${user.name} registou uso.`, `${user.name} recorded usage.`)
   return NextResponse.json({ ok: true })
 }
