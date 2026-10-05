@@ -1,7 +1,7 @@
 import { currentUser } from '@/lib/auth'
 import { recordActivity } from '@/lib/activity'
 import { clerkEnabled } from '@/lib/clerk'
-import { FREE_JOB_LIMIT, FREE_NOTE_LIMIT } from '@/lib/plans'
+import { FREE_JOB_LIMIT, FREE_NOTE_LIMIT, INVITE_METRIC, JOB_METRIC } from '@/lib/plans'
 import { prisma } from '@/lib/prisma'
 import { membershipFor } from '@/lib/tenant'
 import { usageSeries } from '@/lib/usage'
@@ -15,8 +15,8 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
   if (!membership) return NextResponse.json({ error: 'wall' }, { status: 403 })
 
   const [jobs, invites, notes, activity] = await Promise.all([
-    usageSeries(membership.workspaceId, 'jobs'),
-    usageSeries(membership.workspaceId, 'invites'),
+    usageSeries(membership.workspaceId, JOB_METRIC),
+    usageSeries(membership.workspaceId, INVITE_METRIC),
     prisma.ledgerNote.findMany({
       where: { workspaceId: membership.workspaceId },
       orderBy: [{ pinned: 'desc' }, { createdAt: 'desc' }],

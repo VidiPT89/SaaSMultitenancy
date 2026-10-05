@@ -1,7 +1,6 @@
 export const FREE_MEMBER_LIMIT = 3
 export const FREE_NOTE_LIMIT = 8
 export const FREE_JOB_LIMIT = 40
-export const FREE_SEAT_METRIC = 'seats'
 export const JOB_METRIC = 'jobs'
 export const INVITE_METRIC = 'invites'
 

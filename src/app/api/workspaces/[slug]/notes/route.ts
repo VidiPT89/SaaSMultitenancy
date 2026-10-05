@@ -1,6 +1,6 @@
 import { recordActivity } from '@/lib/activity'
 import { currentUser } from '@/lib/auth'
-import { canAddNoteOnFree } from '@/lib/plans'
+import { JOB_METRIC, canAddNoteOnFree } from '@/lib/plans'
 import { prisma } from '@/lib/prisma'
 import { membershipFor } from '@/lib/tenant'
 import { recordUsage } from '@/lib/usage'
@@ -28,7 +28,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
       bodyEn: body.bodyEn?.trim() || body.body?.trim() || '',
     },
   })
-  await recordUsage(membership.workspaceId, 'jobs', 1)
+  await recordUsage(membership.workspaceId, JOB_METRIC, 1)
   await recordActivity(membership.workspaceId, 'note', `${user.name} escreveu no livro.`, `${user.name} wrote in the ledger.`)
   return NextResponse.json({ ok: true })
 }

@@ -1,5 +1,5 @@
 import { currentUser } from '@/lib/auth'
-import { canInviteOnFree } from '@/lib/plans'
+import { INVITE_METRIC, canInviteOnFree } from '@/lib/plans'
 import { prisma } from '@/lib/prisma'
 import { membershipFor } from '@/lib/tenant'
 import { recordActivity } from '@/lib/activity'
@@ -34,7 +34,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
       invitedById: user.id,
     },
   })
-  await recordUsage(membership.workspaceId, 'invites', 1)
+  await recordUsage(membership.workspaceId, INVITE_METRIC, 1)
   await recordActivity(
     membership.workspaceId,
     'invite',

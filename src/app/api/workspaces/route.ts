@@ -1,3 +1,4 @@
+import { JOB_METRIC } from '@/lib/plans'
 import { currentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { hueFor } from '@/lib/hue'
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
       members: { create: { userId: user.id, role: 'admin' } },
     },
   })
-  await recordUsage(workspace.id, 'jobs', 1)
+  await recordUsage(workspace.id, JOB_METRIC, 1)
   await recordActivity(workspace.id, 'create', `${user.name} abriu a empresa.`, `${user.name} opened the company.`)
   return NextResponse.json({ slug: workspace.slug })
 }
