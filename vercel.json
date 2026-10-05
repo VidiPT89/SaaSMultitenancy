@@ -1,0 +1,4 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "DATABASE_URL=\"$DATABASE_URL_UNPOOLED\" npx prisma db push --skip-generate && DATABASE_URL=\"$DATABASE_URL_UNPOOLED\" npx tsx prisma/seed.ts && npm run build"
+}
