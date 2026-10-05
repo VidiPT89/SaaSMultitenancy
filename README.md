@@ -2,6 +2,8 @@
 
 > Isolated company workspaces, member invites and roles, Stripe subscriptions and usage metrics, painted in the ividi.dev palette (black, burnt orange, amber).
 
+[![CI](https://github.com/VidiPT89/SaaSMultitenancy/actions/workflows/ci.yml/badge.svg)](https://github.com/VidiPT89/SaaSMultitenancy/actions/workflows/ci.yml)
+
 [🐞 Report Bug](https://github.com/VidiPT89/SaaSMultitenancy/issues) · [✨ Request Feature](https://github.com/VidiPT89/SaaSMultitenancy/issues)
 
 FIRMA is a Next.js tenancy desk: each company is a walled workspace. Admins invite members with admin or member roles, the free plan holds three seats, and Stripe subscriptions (or a local upgrade when keys are empty) lift the wall. Billing webhooks write an event log. Usage bars track jobs and invites. The UI is European Portuguese / English, with the language toggle remembered in `localStorage`. Clerk takes over identity when publishable and secret keys are set; otherwise the seed identities sign in locally.
