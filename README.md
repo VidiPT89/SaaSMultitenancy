@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/VidiPT89/SaaSMultitenancy/actions/workflows/ci.yml/badge.svg)](https://github.com/VidiPT89/SaaSMultitenancy/actions/workflows/ci.yml)
 
-**🌐 Live demo:** [saas-multitenancy.vercel.app](https://saas-multitenancy.vercel.app) · Pick a demo identity (no Clerk keys needed) and open the company workspaces. The sample data resets on every deploy.
+**🌐 Live demo:** [firma.ividi.dev](https://firma.ividi.dev) · Pick a demo identity (no Clerk keys needed) and open the company workspaces. The sample data resets on every deploy.
 
 [🐞 Report Bug](https://github.com/VidiPT89/SaaSMultitenancy/issues) · [✨ Request Feature](https://github.com/VidiPT89/SaaSMultitenancy/issues)
 
