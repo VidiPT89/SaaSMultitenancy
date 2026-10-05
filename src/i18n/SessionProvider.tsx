@@ -20,9 +20,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setData(await readJson(await fetch('/api/session'), empty))
   }, [])
 
+  // Initial load: setState only in the promise callback, and a late reply after unmount is dropped.
   useEffect(() => {
-    void refresh()
-  }, [refresh])
+    let ignore = false
+    fetch('/api/session')
+      .then((res) => readJson(res, empty))
+      .then((next) => {
+        if (!ignore) setData(next)
+      })
+      .catch(() => {
+        /* offline: keep the empty session */
+      })
+    return () => {
+      ignore = true
+    }
+  }, [])
 
   const value = useMemo(() => ({ data, refresh }), [data, refresh])
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>

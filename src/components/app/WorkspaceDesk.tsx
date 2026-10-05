@@ -29,6 +29,14 @@ function Bars({ series }: { series: UsageBar[] }) {
 
 type Tab = 'overview' | 'ledger' | 'team' | 'billing'
 
+type WorkspaceResult = { denied: true } | { denied: false; data: WorkspacePayload | null }
+
+async function fetchWorkspace(slug: string): Promise<WorkspaceResult> {
+  const res = await fetch(`/api/workspaces/${slug}`)
+  if (res.status === 403 || res.status === 401) return { denied: true }
+  return { denied: false, data: await readJson<WorkspacePayload | null>(res, null) }
+}
+
 export function WorkspaceDesk({ slug }: { slug: string }) {
   const { t, locale } = useLocale()
   const [data, setData] = useState<WorkspacePayload | null>(null)
@@ -43,21 +51,36 @@ export function WorkspaceDesk({ slug }: { slug: string }) {
   const [copied, setCopied] = useState('')
   const [query, setQuery] = useState('')
 
+  const apply = useCallback(
+    (result: WorkspaceResult) => {
+      if (result.denied) {
+        setDenied(true)
+        setData(null)
+        return
+      }
+      setData(result.data)
+      if (result.data) setName(locale === 'pt' ? result.data.name : result.data.nameEn)
+    },
+    [locale],
+  )
+
   const load = useCallback(async () => {
-    const res = await fetch(`/api/workspaces/${slug}`)
-    if (res.status === 403 || res.status === 401) {
-      setDenied(true)
-      setData(null)
-      return
-    }
-    const next = await readJson<WorkspacePayload | null>(res, null)
-    setData(next)
-    if (next) setName(locale === 'pt' ? next.name : next.nameEn)
-  }, [slug, locale])
+    apply(await fetchWorkspace(slug))
+  }, [apply, slug])
 
   useEffect(() => {
-    void load()
-  }, [load])
+    let ignore = false
+    fetchWorkspace(slug)
+      .then((result) => {
+        if (!ignore) apply(result)
+      })
+      .catch(() => {
+        /* offline: keep what is on screen */
+      })
+    return () => {
+      ignore = true
+    }
+  }, [apply, slug])
 
   async function invite() {
     setError('')
@@ -335,7 +358,7 @@ export function WorkspaceDesk({ slug }: { slug: string }) {
                 body: JSON.stringify({ userId: data.me }),
               })
               if (res.status === 409) setError(t.lastAdmin)
-              else window.location.href = '/app'
+              else window.location.assign('/app')
             }}
           >
             {t.leave}
@@ -353,7 +376,7 @@ export function WorkspaceDesk({ slug }: { slug: string }) {
             {data.role === 'admin' && data.plan === 'free' && (
               <button type="button" className="mt-4 rounded-full bg-[#ffaa00] px-4 py-2 text-sm font-bold text-black" onClick={async () => {
                 const json = await readJson<{ url?: string | null }>(await fetch(`/api/workspaces/${slug}/billing`, { method: 'POST' }), {})
-                if (json.url) window.location.href = json.url
+                if (json.url) window.location.assign(json.url)
                 else await load()
               }}>
                 {t.upgrade}

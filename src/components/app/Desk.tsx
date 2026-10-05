@@ -31,7 +31,7 @@ export function Desk() {
     })
     const json = await readJson<{ slug?: string }>(res, {})
     setName('')
-    if (json.slug) window.location.href = `/app/${json.slug}`
+    if (json.slug) window.location.assign(`/app/${json.slug}`)
     else await refresh()
   }
 
@@ -41,7 +41,7 @@ export function Desk() {
       body: JSON.stringify({ token: value }),
     })
     const json = await readJson<{ slug?: string }>(res, {})
-    if (json.slug) window.location.href = `/app/${json.slug}`
+    if (json.slug) window.location.assign(`/app/${json.slug}`)
     await refresh()
   }
 

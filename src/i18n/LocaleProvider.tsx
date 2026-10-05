@@ -1,6 +1,14 @@
 'use client'
 
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useSyncExternalStore,
+  type ReactNode,
+} from 'react'
 import { dictionaries, type Dictionary, type Locale } from './dictionaries'
 
 const STORAGE = 'firma-locale'
@@ -13,21 +21,37 @@ type Ctx = {
 
 const LocaleContext = createContext<Ctx | null>(null)
 
+// The choice lives in localStorage, read through useSyncExternalStore: no setState in an
+// effect, and the server render (and first hydration pass) always uses the default 'pt'.
+const listeners = new Set<() => void>()
+
+function subscribe(onChange: () => void) {
+  listeners.add(onChange)
+  window.addEventListener('storage', onChange)
+  return () => {
+    listeners.delete(onChange)
+    window.removeEventListener('storage', onChange)
+  }
+}
+
 function readLocale(): Locale {
-  if (typeof window === 'undefined') return 'pt'
   const stored = localStorage.getItem(STORAGE)
   return stored === 'en' || stored === 'pt' ? stored : 'pt'
 }
 
-export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>('pt')
+function serverLocale(): Locale {
+  return 'pt'
+}
 
-  useEffect(() => {
-    setLocaleState(readLocale())
+export function LocaleProvider({ children }: { children: ReactNode }) {
+  const locale = useSyncExternalStore(subscribe, readLocale, serverLocale)
+
+  const setLocale = useCallback((next: Locale) => {
+    localStorage.setItem(STORAGE, next)
+    listeners.forEach((notify) => notify())
   }, [])
 
   useEffect(() => {
-    localStorage.setItem(STORAGE, locale)
     document.documentElement.lang = locale === 'pt' ? 'pt-PT' : 'en'
   }, [locale])
 
@@ -35,9 +59,9 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     () => ({
       locale,
       t: dictionaries[locale],
-      setLocale: setLocaleState,
+      setLocale,
     }),
-    [locale],
+    [locale, setLocale],
   )
 
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>
